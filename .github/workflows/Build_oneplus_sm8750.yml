@@ -363,7 +363,7 @@ jobs:
         with:
           tag_name: "v${{ env.KSUVER }}"
           name: AnyKernel3_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SuKiSU
-          files: ./AnyKernel3_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SuKiSU.zip
+          files: ./AnyKernel3/AnyKernel3_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SuKiSU.zip
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
