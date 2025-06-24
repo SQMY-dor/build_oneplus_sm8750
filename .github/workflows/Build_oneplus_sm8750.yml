@@ -79,8 +79,8 @@ jobs:
 
       - name: 📦 Configure Git (设置下载账户)
         run: |
-          git config --global user.name "Q1udaoyu"
-          git config --global user.email "sucisama2888@gmail.com"
+          git config --global user.name "SQMY-dor"
+          git config --global user.email "2798005047@qq.com"
 
       - name: 🛠 Cache APT packages (缓存APT包)
         uses: actions/cache@v3
@@ -346,17 +346,30 @@ jobs:
          
       - name: 📦 Make AnyKernel3 (创建AnyKernel3)
         run: |
-         git clone https://github.com/showdo/AnyKernel3.git --depth=1      
+         git clone https://github.com/Kernel-SU/AnyKernel3.git --depth=1      
          rm -rf ./AnyKernel3/.git
          rm -rf ./AnyKernel3/push.sh
          cp kernel_workspace/kernel_platform/common/out/arch/arm64/boot/Image ./AnyKernel3/
+         cd AnyKernel3
+         zip -r ../AnyKernel3_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SuKiSU.zip ./*
+         cd ..
 
       - name: 📤 Upload AnyKernel3 (上传 AnyKernel3)
         uses: actions/upload-artifact@v4
         with:
          name: AnyKernel3_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SuKiSU
          path: ./AnyKernel3/*
-         
+
+      - name: 📤 Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ env.KSUVER }}"
+          name: AnyKernel3_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SuKiSU
+          files: ./AnyKernel3_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SuKiSU.zip
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+      
       - name: 📊 Post-build disk check (构建后空间检查)
         run: |
           echo "构建后磁盘空间："
