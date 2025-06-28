@@ -423,6 +423,5 @@ jobs:
           name: "SuKiSU ${{ env.KSUVER }} (${{ env.DEVICES_NAME }})"
           files: |
             ./AnyKernel3/*
-            ./AnyKernel3_NoKPM/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
