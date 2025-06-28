@@ -442,6 +442,7 @@ jobs:
         if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: ${{ github.workspace }}
         run: |
           TAG_NAME="release-${{ env.KSUVER }}-${{ env.DEVICES_NAME }}"
           RELEASE_NAME="Auto Release $TAG_NAME"
