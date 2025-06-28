@@ -443,7 +443,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG_NAME="release-$(date +'%Y%m%d-%H%M%S')-${{ env.KSUVER }}-${{ env.DEVICES_NAME }}"
+          TAG_NAME="release-${{ env.KSUVER }}-${{ env.DEVICES_NAME }}"
           RELEASE_NAME="Auto Release $TAG_NAME"
           gh release create "$TAG_NAME" ./AnyKernel3/* ./AnyKernel3_NoKPM/* --title "$RELEASE_NAME" --notes "自动构建发布 by GitHub Actions"
         shell: bash
