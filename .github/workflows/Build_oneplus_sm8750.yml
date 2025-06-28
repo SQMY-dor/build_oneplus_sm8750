@@ -455,7 +455,7 @@ jobs:
           tag_name: ${{ env.RELEASE_TAG }}
           name: "SuKiSU ${{ env.KSUVER }} (${{ env.DEVICES_NAME }})"
           files: |
-            ./AnyKernel3/SuKiSu_${{ env.KSUVER }}_oneplus_ace5_pro_bbr_kpm.zip
-            ./AnyKernel3_NoKPM/SuKiSu_${{ env.KSUVER }}_oneplus_ace5_pro_bbr_nokpm.zip
+            ./SuKiSu_${{ env.KSUVER }}_oneplus_ace5_pro_bbr_kpm.zip
+            ./SuKiSu_${{ env.KSUVER }}_oneplus_ace5_pro_bbr_nokpm.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
