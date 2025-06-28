@@ -1,5 +1,7 @@
 name: Build_oneplus_sm8750
 on:
+  schedule:
+    - cron: '0 2,15 * * *'
   workflow_dispatch:
     inputs:
       REPO_MANIFEST:
@@ -129,7 +131,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-apt-
 
-      - name: 📦 Install dependencies (安装依赖)
+      - name: 📦 Install dependencies & Init ccache (合并安装依赖和初始化ccache)
         run: |
           sudo rm -f /var/lib/apt/lists/lock /var/lib/dpkg/lock
           APT_CACHE_DIR="$HOME/apt-cache"
@@ -140,26 +142,12 @@ jobs:
             build-essential flex bison libssl-dev \
             libncurses-dev liblz4-tool zlib1g-dev \
             libxml2-utils rsync unzip
-          
           echo "✅ 依赖安装完成"
-          
-      - name: 📥 Restore ccache (载入 机型：${{ env.DEVICES_NAME }}的 ccache 缓存)
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ccache-${{ runner.os }}-${{ github.ref }}-${{ env.REPO_MANIFEST }}
-          restore-keys: |
-            ccache-${{ runner.os }}-${{ env.REPO_MANIFEST }}-
-            ccache-${{ runner.os }}-
-
-      - name: 📥 Init ccache (如果是第一次运行则初始化Cceche)
-        run: |
           export CCACHE_COMPILERCHECK="%compiler% -dumpmachine; %compiler% -dumpversion"
           export CCACHE_NOHASHDIR="true"
           export CCACHE_HARDLINK="true"
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
           export CCACHE_MAXSIZE="8G"
-
           INIT_FLAG="$CCACHE_DIR/.ccache_initialized"
           if command -v ccache >/dev/null 2>&1; then
             if [ ! -f "$INIT_FLAG" ]; then
@@ -174,20 +162,28 @@ jobs:
             echo "未安装 ccache，跳过"
           fi
 
+      - name: 📥 Restore ccache (载入 机型：${{ env.DEVICES_NAME }}的 ccache 缓存)
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ runner.os }}-${{ github.sha }}-${{ env.REPO_MANIFEST }}
+          restore-keys: |
+            ccache-${{ runner.os }}-${{ env.REPO_MANIFEST }}-
+            ccache-${{ runner.os }}-
 
       - name: 📥 Install repo tool (下载repo工具)
         run: |
-         curl https://storage.googleapis.com/git-repo-downloads/repo > ~/repo
+         curl -LSs https://storage.googleapis.com/git-repo-downloads/repo -o ~/repo
          chmod a+x ~/repo
          sudo mv ~/repo /usr/local/bin/repo
 
       - name: 📥 Initialize repo and sync (初始化repo并同步内核源码)
         run: |
-         mkdir kernel_workspace && cd kernel_workspace
+         mkdir -p kernel_workspace && cd kernel_workspace
          repo init -u https://github.com/showdo/kernel_manifest.git -b refs/heads/oneplus/sm8750 -m ${REPO_MANIFEST}.xml --depth=1
-         repo --trace sync -c -j$(nproc --all) --no-tags
-         rm kernel_platform/common/android/abi_gki_protected_exports_* || echo "No protected exports!"
-         rm kernel_platform/msm-kernel/android/abi_gki_protected_exports_* || echo "No protected exports!"
+         repo --trace sync -c -j$(nproc) --no-tags
+         rm -f kernel_platform/common/android/abi_gki_protected_exports_* || echo "No protected exports!"
+         rm -f kernel_platform/msm-kernel/android/abi_gki_protected_exports_* || echo "No protected exports!"
          
       - name: ⚙️ Set up SukiSU Ultra (配置 SukiSU Ultra)
         run: |
@@ -405,7 +401,8 @@ jobs:
       - name: 📦 Make AnyKernel3 (NoKPM)
         if: ${{inputs.enable_feature_x }}
         run: |
-          git clone https://github.com/showdo/AnyKernel3.git --depth=1 AnyKernel3_NoKPM
+          git clone --depth=1 --filter=blob:none --sparse https://github.com/Kernel-SU/AnyKernel3.git AnyKernel3_NoKPM
+          cd AnyKernel3_NoKPM && git sparse-checkout set Image && cd ..
           rm -rf ./AnyKernel3_NoKPM/.git
           rm -rf ./AnyKernel3_NoKPM/push.sh
           cp kernel_workspace/kernel_platform/common/out/arch/arm64/boot/Image ./AnyKernel3_NoKPM/
@@ -429,7 +426,8 @@ jobs:
          
       - name: 📦 Make AnyKernel3 (KPM)
         run: |
-         git clone https://github.com/showdo/AnyKernel3.git --depth=1      
+         git clone --depth=1 --filter=blob:none --sparse https://github.com/Kernel-SU/AnyKernel3.git AnyKernel3
+         cd AnyKernel3 && git sparse-checkout set Image && cd ..
          rm -rf ./AnyKernel3/.git
          rm -rf ./AnyKernel3/push.sh
          cp kernel_workspace/kernel_platform/common/out/arch/arm64/boot/Image ./AnyKernel3/
@@ -440,6 +438,16 @@ jobs:
          name: AK3_KPM_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SuKiSU
          path: ./AnyKernel3/*
          
+      - name: 🚀 Create Release and Upload Assets (自动推送到Release)
+        if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="release-$(date +'%Y%m%d-%H%M%S')-${{ env.KSUVER }}-${{ env.DEVICES_NAME }}"
+          RELEASE_NAME="Auto Release $TAG_NAME"
+          gh release create "$TAG_NAME" ./AnyKernel3/* ./AnyKernel3_NoKPM/* --title "$RELEASE_NAME" --notes "自动构建发布 by GitHub Actions"
+        shell: bash
+
       - name: 📊 Post-build disk check (构建后空间检查)
         run: |
           echo "构建后磁盘空间："
