@@ -400,17 +400,21 @@ jobs:
       - name: 📦 Make AnyKernel3 (NoKPM)
         if: ${{inputs.enable_feature_x }}
         run: |
-          git clone https://github.com/showdo/AnyKernel3.git --depth=1 AnyKernel3_NoKPM
-          rm -rf ./AnyKernel3_NoKPM/.git
-          rm -rf ./AnyKernel3_NoKPM/push.sh
-          cp kernel_workspace/kernel_platform/common/out/arch/arm64/boot/Image ./AnyKernel3_NoKPM/
-      
-      
+          git clone https://github.com/Kernel-SU/AnyKernel3.git --depth=1      
+          rm -rf ./AnyKernel3/.git
+          rm -rf ./AnyKernel3/push.sh
+          cp kernel_workspace/kernel_platform/common/out/arch/arm64/boot/Image ./AnyKernel3/
+          cd AnyKernel3
+          zip -r ../AK3_KPM_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SuKiSU_noKPM.zip ./*
+          cd ..
+          mkdir ./AnyKernel3_NoKPM
+          cp ./AnyKernel3/* ./AnyKernel3_NoKPM/
+
       - name: 📤 Upload AnyKernel3 (上传NoKPM_AK3包)
         if: ${{inputs.enable_feature_x }}
         uses: actions/upload-artifact@v4
         with:
-          name: AK3_NoKPM_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SuKiSU
+          name: AK3_KPM_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SuKiSU_noKPM.zip
           path: ./AnyKernel3_NoKPM/*
 
       - name: 📦 Apply KPM Patch (应用KPM修补补丁)
@@ -421,28 +425,43 @@ jobs:
          ./patch_linux
          rm -f Image
          mv oImage Image
-         
+
+        # 步骤3：创建GitHub Release
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ env.KSUVER }}"
+          name: "SuKiSu ${{ env.KSUVEE }} (oneplus_ace5_pro)"
+          files: ./SuKiSu_${{ env.KSUVER }}_oneplus_ace5_pro_bbr_nokpm.zip
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   
+      
       - name: 📦 Make AnyKernel3 (KPM)
         run: |
-         git clone https://github.com/showdo/AnyKernel3.git --depth=1      
+         git clone https://github.com/Kernel-SU/AnyKernel3.git --depth=1      
          rm -rf ./AnyKernel3/.git
          rm -rf ./AnyKernel3/push.sh
          cp kernel_workspace/kernel_platform/common/out/arch/arm64/boot/Image ./AnyKernel3/
+         cd AnyKernel3
+         zip -r ../AK3_KPM_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SuKiSU.zip ./*
+         cd ..
 
       - name: 📤 Upload AnyKernel3 (上传 KPM_AK3包)
         uses: actions/upload-artifact@v4
         with:
-         name: AK3_KPM_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SuKiSU
+         name: AK3_KPM_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SuKiSU.zip
          path: ./AnyKernel3/*
          
       - name: 📊 Post-build disk check (构建后空间检查)
         run: |
           echo "构建后磁盘空间："
           df -h
-      - name: Set release tag
+      - name: ⏰ Set release tag
         run: |
           export TZ=Asia/Shanghai
           echo "RELEASE_TAG=v${KSUVER}_${DEVICES_NAME}_$(date -d '+8 hour' +'%Y%m%d%H%M')" >> $GITHUB_ENV
+      
       - name: 📤 Release to GitHub (自动发布Release)
         uses: softprops/action-gh-release@v2
         with:
