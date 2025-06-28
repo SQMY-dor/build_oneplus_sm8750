@@ -404,6 +404,9 @@ jobs:
           rm -rf ./AnyKernel3_NoKPM/.git
           rm -rf ./AnyKernel3_NoKPM/push.sh
           cp kernel_workspace/kernel_platform/common/out/arch/arm64/boot/Image ./AnyKernel3_NoKPM/
+          cd AnyKernel3_NoKPM
+          zip -r ../SuKiSu_${{ env.KSUVER }}_oneplus_ace5_pro_bbr_nokpm.zip ./*
+          cd ..
       
       
       - name: 📤 Upload AnyKernel3 (上传NoKPM_AK3包)
@@ -428,6 +431,9 @@ jobs:
          rm -rf ./AnyKernel3/.git
          rm -rf ./AnyKernel3/push.sh
          cp kernel_workspace/kernel_platform/common/out/arch/arm64/boot/Image ./AnyKernel3/
+         cd AnyKernel3
+         zip -r ../SuKiSu_${{ env.KSUVER }}_oneplus_ace5_pro_bbr_kpm.zip ./*
+         cd ..
 
       - name: 📤 Upload AnyKernel3 (上传 KPM_AK3包)
         uses: actions/upload-artifact@v4
