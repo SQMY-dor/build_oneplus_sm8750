@@ -5,15 +5,10 @@ on:
   workflow_dispatch:
     inputs:
       REPO_MANIFEST:
-        description: "请选择要编译的机型："
+        description: "固定编译机型: oneplus_ace5_pro（已禁用选择）"
         required: true
-        type: choice
-        options:
-          - 'oneplus_13'
-          - 'oneplus_ace5_pro'
-          - 'oneplus_13t'
-          - 'oneplus_pad_2_pro'
-        default: 'oneplus_ace5_pro'
+        type: string
+        default: "oneplus_ace5_pro"
         
       keep_original_settings:
         description: "✅ 保持原内核名称及构建时间"
@@ -64,12 +59,12 @@ jobs:
       - name: ⚙️ Set REPO_MANIFEST (设置对应机型配置文件)
         id: set_manifest
         run: |
-          
-          echo "REPO_MANIFEST=JiuGeFaCai_oneplus_ace5_pro_v" >> $GITHUB_ENV
+          # 强制固定机型为 oneplus_ace5_pro（忽略所有输入参数）
           echo "DEVICES_NAME=oneplus_ace5_pro" >> $GITHUB_ENV
-
-          echo "REPO_MANIFEST=${{ github.event.inputs.REPO_MANIFEST }}" >> $GITHUB_ENV
-          echo "DEVICES_NAME=${{ github.event.inputs.DEVICES_NAME }}" >> $GITHUB_ENV
+          echo "REPO_MANIFEST=JiuGeFaCai_oneplus_ace5_pro_v" >> $GITHUB_ENV
+          echo "KERNEL_TIME=Tue Dec 17 23:36:49 UTC 2024" >> $GITHUB_ENV
+          echo "KERNEL_SUFFIX=-android15-8-g013ec21bba94-abogki383916444-4k" >> $GITHUB_ENV
+          echo "INPUT_REPO_MANIFEST=oneplus_ace5_pro" >> $GITHUB_ENV  # 确保与输入参数一致
 
 
       - name: ⚙️ Set KERNEL_TIME (设置构建时间)
