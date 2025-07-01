@@ -5,7 +5,7 @@ on:
       REPO_MANIFEST:
         description: "请选择要编译的机型："
         required: true
-        type: choice
+        type: boolean
         options:
           - 'oneplus_13'
           - 'oneplus_ace5_pro'
