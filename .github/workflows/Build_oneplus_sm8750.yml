@@ -4,13 +4,10 @@ on:
     - cron: '0 2,15 * * *'
   workflow_dispatch:
     inputs:
-<<<<<<< HEAD
-=======
       REPO_MANIFEST:
         description: "请选择要编译的机型："
         required: true
         default: 'oneplus_ace5_pro'
->>>>>>> 059e502651b7e06896b57354bf43bd5365a11722
 
       keep_original_settings:
         description: "保持原内核名称及构建时间"
@@ -73,20 +70,6 @@ jobs:
       - name: ⚙️ Set KERNEL_TIME (设置构建时间)
         id: set_kernel_time
         run: |
-<<<<<<< HEAD
-          case "$DEVICES_NAME" in
-            oneplus_13 | oneplus_ace5_pro)
-              echo 'KERNEL_TIME=Tue Dec 17 23:36:49 UTC 2024' >> $GITHUB_ENV
-              ;;
-            oneplus_13t)
-              echo 'KERNEL_TIME=FriApr 25 01:56:53 UTC 2025' >> $GITHUB_ENV
-              ;;
-            oneplus_pad_2_pro)
-              echo 'KERNEL_TIME=Wed Dec 11 19:16:38 UTC 2024' >> $GITHUB_ENV
-              ;;
-          esac
-
-=======
           if [ "$KEEP_ORIGINAL" = "false" ] && [ -n "$CUSTOM_TIME" ]; then
             echo "使用自定义构建时间: $CUSTOM_TIME"
             echo "KERNEL_TIME=$CUSTOM_TIME" >> $GITHUB_ENV
@@ -106,7 +89,6 @@ jobs:
                 ;;
             esac
           fi
->>>>>>> 059e502651b7e06896b57354bf43bd5365a11722
 
       - name: ⚙️ Set device-specific CCACHE_DIR (设置对应机型Cceche路径)
         run: |
