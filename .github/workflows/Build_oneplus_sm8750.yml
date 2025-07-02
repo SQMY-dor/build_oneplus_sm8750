@@ -25,12 +25,6 @@ on:
         description: "⏰ 自定义构建时间(示例：Tue Dec 17 23:36:49 UTC 2024) - 仅在取消勾选'保持原设置'时有效"
         required: false
         default: ''
-      
-      enable_feature_x:
-        description: "生成无KPM的AK3 - 取消则只有有KPM的AK3"
-        required: false
-        default: true
-        type: boolean
         
       enable_feature_y:
         description: "启用lz4+zstd"
@@ -390,7 +384,6 @@ jobs:
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" RUSTC=../../prebuilts/rust/linux-x86/1.73.0b/bin/rustc PAHOLE=../../prebuilts/kernel-build-tools/linux-x86/bin/pahole LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2  Image
           
       - name: 📦 Make AnyKernel3 (NoKPM)
-        if: ${{inputs.enable_feature_x }}
         run: |
           git clone https://github.com/SQMY-dor/AnyKernel3.git --depth=1 AnyKernel3_NoKPM
           rm -rf ./AnyKernel3_NoKPM/.git
@@ -402,7 +395,6 @@ jobs:
       
       
       - name: 📤 Upload AnyKernel3 (上传NoKPM_AK3包)
-        if: ${{inputs.enable_feature_x }}
         uses: actions/upload-artifact@v4
         with:
           name: AK3_NoKPM_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SuKiSU
