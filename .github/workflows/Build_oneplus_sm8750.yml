@@ -1,33 +1,45 @@
 name: Build_oneplus_sm8750
 on:
-  schedule:
-    - cron: '0 2,15 * * *'
   workflow_dispatch:
     inputs:
       REPO_MANIFEST:
-        description: "固定编译机型: oneplus_ace5_pro（已禁用选择）"
+        description: "请选择要编译的机型："
         required: true
-        type: string
-        default: "oneplus_ace5_pro"
-        
+        type: choice
+        options:
+          - 'oneplus_13'
+          - 'oneplus_ace5_pro'
+          - 'oneplus_13t'
+          - 'oneplus_pad_2_pro'
+          - 'oneplus_ace5_ultra'
+          - 'realme_GT7pro'
+          - 'realme_GT7pro_Speed'
+        default: 'oneplus_ace5_pro'
+
       keep_original_settings:
-        description: "✅ 保持原内核名称及构建时间"
+        description: "保持原内核名称及构建时间"
         required: false
         default: true
         type: boolean
 
       custom_kernel_suffix:
-        description: "✏️ 自定义内核名称(可中文和emoji) - 仅在取消勾选'保持原设置'时有效"
+        description: "✏️ 自定义内核名称(示例:-TG@qdykernel) - 仅在取消勾选'保持原设置'时有效"
         required: false
         default: ''
       
       custom_kernel_time:
-        description: "⏰ 自定义构建时间(示例：Tue Dec 17 23:36:49 UTC 2024) - 仅在取消勾选'保持原设置'时有效"
+        description: "⏰ 自定义构建时间(示例:Tue Dec 17 23:36:49 UTC 2024) - 仅在取消勾选'保持原设置'时有效"
         required: false
         default: ''
+      
+      enable_feature_x:
+        description: "生成无KPM的AK3 - 取消则只有有KPM的AK3"
+        required: false
+        default: true
+        type: boolean
         
       enable_feature_y:
-        description: "启用lz4+zstd"
+        description: "启用lz4kd"
         required: false
         default: true
         type: boolean
@@ -49,6 +61,7 @@ on:
 
 jobs:
   build:
+    name: Build_${{ github.event.inputs.REPO_MANIFEST }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -62,29 +75,43 @@ jobs:
       - name: ⚙️ Set REPO_MANIFEST (设置对应机型配置文件)
         id: set_manifest
         run: |
-          # 强制固定机型为 oneplus_ace5_pro（忽略所有输入参数）
-          echo "DEVICES_NAME=oneplus_ace5_pro" >> $GITHUB_ENV
-          echo "REPO_MANIFEST=JiuGeFaCai_oneplus_ace5_pro_v" >> $GITHUB_ENV
-          echo "KERNEL_TIME=Tue Dec 17 23:36:49 UTC 2024" >> $GITHUB_ENV
-          echo "KERNEL_SUFFIX=-android15-8-g013ec21bba94-abogki383916444-4k" >> $GITHUB_ENV
-          echo "INPUT_REPO_MANIFEST=oneplus_ace5_pro" >> $GITHUB_ENV  # 确保与输入参数一致
-
+          case "${{ github.event.inputs.REPO_MANIFEST }}" in
+            oneplus_ace5_pro)
+              echo "REPO_MANIFEST=JiuGeFaCai_oneplus_ace5_pro_v" >> $GITHUB_ENV
+              echo "DEVICES_NAME=oneplus_ace5_pro" >> $GITHUB_ENV
+              ;;
+            oneplus_13)
+              echo "REPO_MANIFEST=JiuGeFaCai_oneplus_13_v" >> $GITHUB_ENV
+              echo "DEVICES_NAME=oneplus_13" >> $GITHUB_ENV
+              ;;
+            *)
+              echo "REPO_MANIFEST=${{ github.event.inputs.REPO_MANIFEST }}" >> $GITHUB_ENV
+              echo "DEVICES_NAME=${{ github.event.inputs.REPO_MANIFEST }}" >> $GITHUB_ENV
+              ;;
+          esac
 
       - name: ⚙️ Set KERNEL_TIME (设置构建时间)
         id: set_kernel_time
         run: |
-          case "$DEVICES_NAME" in
-            oneplus_13 | oneplus_ace5_pro)
-              echo 'KERNEL_TIME=Tue Dec 17 23:36:49 UTC 2024' >> $GITHUB_ENV
-              ;;
-            oneplus_13t)
-              echo 'KERNEL_TIME=FriApr 25 01:56:53 UTC 2025' >> $GITHUB_ENV
-              ;;
-            oneplus_pad_2_pro)
-              echo 'KERNEL_TIME=Wed Dec 11 19:16:38 UTC 2024' >> $GITHUB_ENV
-              ;;
-          esac
-
+          if [ "$KEEP_ORIGINAL" = "false" ] && [ -n "$CUSTOM_TIME" ]; then
+            echo "使用自定义构建时间: $CUSTOM_TIME"
+            echo "KERNEL_TIME=$CUSTOM_TIME" >> $GITHUB_ENV
+          else
+            case "$DEVICES_NAME" in
+              oneplus_13 | oneplus_ace5_pro | realme_GT7pro | realme_GT7pro_Speed)
+                echo 'KERNEL_TIME=Tue Dec 17 23:36:49 UTC 2024' >> $GITHUB_ENV
+                ;;
+              oneplus_13t)
+                echo 'KERNEL_TIME=FriApr 25 01:56:53 UTC 2025' >> $GITHUB_ENV
+                ;;
+              oneplus_pad_2_pro)
+                echo 'KERNEL_TIME=Wed Dec 11 19:16:38 UTC 2024' >> $GITHUB_ENV
+                ;;
+              oneplus_ace5_ultra)
+                echo 'KERNEL_TIME=Fri Apr 18 19:35:07 UTC 2025' >> $GITHUB_ENV
+                ;;
+            esac
+          fi
 
       - name: ⚙️ Set device-specific CCACHE_DIR (设置对应机型Cceche路径)
         run: |
@@ -110,7 +137,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ env.HOME }}/apt-cache
-          key: ${{ runner.os }}-apt-${{ hashFiles('.github/workflows/Build_oneplus_sm8750.yaml') }}
+          key: ${{ runner.os }}-apt-${{ hashFiles('.github/workflows/Build_oneplus_sm8750.yml') }}
           restore-keys: |
             ${{ runner.os }}-apt-
 
@@ -169,7 +196,7 @@ jobs:
       - name: 📥 Initialize repo and sync (初始化repo并同步内核源码)
         run: |
          mkdir kernel_workspace && cd kernel_workspace
-         repo init -u https://github.com/OnePlusOSS/kernel_manifest.git -b refs/heads/oneplus/sm8750 -m ${REPO_MANIFEST}.xml --depth=1
+         repo init -u https://github.com/showdo/kernel_manifest.git -b refs/heads/oneplus/sm8750 -m ${REPO_MANIFEST}.xml --depth=1
          repo --trace sync -c -j$(nproc --all) --no-tags
          rm kernel_platform/common/android/abi_gki_protected_exports_* || echo "No protected exports!"
          rm kernel_platform/msm-kernel/android/abi_gki_protected_exports_* || echo "No protected exports!"
@@ -199,10 +226,15 @@ jobs:
            cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
            cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
 
+           cp -r ../SukiSU_patch/other/zram/lz4k/include/linux/* ./common/include/linux
+           cp -r ../SukiSU_patch/other/zram/lz4k/lib/* ./common/lib
+           cp -r ../SukiSU_patch/other/zram/lz4k/crypto/* ./common/crypto
+           cp -r ../SukiSU_patch/other/zram/lz4k_oplus ./common/lib/
+
            # Apply patches
            cd ./common
 
-           if [ "${REPO_MANIFEST}" != "oneplus_13t" ]; then
+           if [ "${REPO_MANIFEST}" != "oneplus_13t" ] && [ "${REPO_MANIFEST}" != "oneplus_ace5_ultra" ]; then
             sed -i 's/-32,12 +32,38/-32,11 +32,37/g' 50_add_susfs_in_gki-android15-6.6.patch
             sed -i '/#include <trace\/hooks\/fs.h>/d' 50_add_susfs_in_gki-android15-6.6.patch
            fi
@@ -242,28 +274,11 @@ jobs:
           
       - name: 🔧 Apply lz4kd Patches (应用LZ4KD补丁)
         if: ${{inputs.enable_feature_y }}
-      - name: 🔧 Update compression algorithms (更新压缩算法)
-        if: ${{ inputs.enable_feature_y }}
         run: |
           cd kernel_workspace/kernel_platform/common
-          
-          # 更新LZ4实现
-          curl -sSLO https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/plain/lib/lz4/lz4_decompress.c
-          curl -sSLO https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/plain/lib/lz4/lz4defs.h
-          curl -sSLO https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/plain/lib/lz4/lz4_compress.c
-          curl -sSLO https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/plain/lib/lz4/lz4hc_compress.c
-          
-          # 更新Zstd实现
-          zstd_base="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/plain/lib/zstd"
-          mkdir -p lib/zstd && cd lib/zstd
-          curl -sSL $zstd_base/zstd_common_module.c -o common.c
-          curl -sSL $zstd_base/compress/zstd_compress_module.c -o compress.c
-          curl -sSL $zstd_base/decompress/zstd_decompress_module.c -o decompress.c
-          curl -sSL $zstd_base/zstd_compat.h -o compat.h
-          
-          cd ../../..
-          echo "✅ LZ4/Zstd 算法更新完成"
-
+            cp ../../SukiSU_patch/other/zram/zram_patch/6.6/lz4kd.patch ./
+            patch -p1 -F 3 < lz4kd.patch || true
+            
       - name: 🔧 Set gki_defconfig (设置编译配置)
         env:
           ENABLE_B: ${{ github.event.inputs.enable_feature_b }}       
@@ -326,7 +341,7 @@ jobs:
           cd kernel_workspace/kernel_platform
 
           case "$DEVICES_NAME" in
-            oneplus_13 | oneplus_ace5_pro)
+            oneplus_13 | oneplus_ace5_pro | realme_GT7pro | realme_GT7pro_Speed)
               DEFAULT_SUFFIX="-android15-8-g013ec21bba94-abogki383916444-4k"
               ;;
             oneplus_13t)
@@ -334,6 +349,9 @@ jobs:
               ;;
             oneplus_pad_2_pro)
               DEFAULT_SUFFIX="-android15-8-g0261dbe3cf7e-ab12786384-4k"
+              ;;
+            oneplus_ace5_ultra)
+              DEFAULT_SUFFIX="-android15-8-gfc70d29746a7-abogki412262948-4k"
               ;;
           esac
           
@@ -388,17 +406,16 @@ jobs:
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" RUSTC=../../prebuilts/rust/linux-x86/1.73.0b/bin/rustc PAHOLE=../../prebuilts/kernel-build-tools/linux-x86/bin/pahole LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2  Image
           
       - name: 📦 Make AnyKernel3 (NoKPM)
+        if: ${{inputs.enable_feature_x }}
         run: |
-          git clone https://github.com/SQMY-dor/AnyKernel3.git --depth=1 AnyKernel3_NoKPM
+          git clone https://github.com/showdo/AnyKernel3.git --depth=1 AnyKernel3_NoKPM
           rm -rf ./AnyKernel3_NoKPM/.git
           rm -rf ./AnyKernel3_NoKPM/push.sh
           cp kernel_workspace/kernel_platform/common/out/arch/arm64/boot/Image ./AnyKernel3_NoKPM/
-          cd AnyKernel3_NoKPM
-          zip -r ../SuKiSu_${{ env.KSUVER }}_oneplus_ace5_pro_bbr_nokpm.zip ./*
-          cd ..
       
       
       - name: 📤 Upload AnyKernel3 (上传NoKPM_AK3包)
+        if: ${{inputs.enable_feature_x }}
         uses: actions/upload-artifact@v4
         with:
           name: AK3_NoKPM_${{ env.KSUVER }}_${{ env.DEVICES_NAME }}_SuKiSU
@@ -415,13 +432,10 @@ jobs:
          
       - name: 📦 Make AnyKernel3 (KPM)
         run: |
-         git clone https://github.com/SQMY-dor/AnyKernel3.git --depth=1      
+         git clone https://github.com/showdo/AnyKernel3.git --depth=1      
          rm -rf ./AnyKernel3/.git
          rm -rf ./AnyKernel3/push.sh
          cp kernel_workspace/kernel_platform/common/out/arch/arm64/boot/Image ./AnyKernel3/
-         cd AnyKernel3
-         zip -r ../SuKiSu_${{ env.KSUVER }}_oneplus_ace5_pro_bbr_kpm.zip ./*
-         cd ..
 
       - name: 📤 Upload AnyKernel3 (上传 KPM_AK3包)
         uses: actions/upload-artifact@v4
@@ -433,17 +447,3 @@ jobs:
         run: |
           echo "构建后磁盘空间："
           df -h
-      - name: Set release tag
-        run: |
-          export TZ=Asia/Shanghai
-          echo "RELEASE_TAG=v${KSUVER}_${DEVICES_NAME}_$(date -d '+8 hour' +'%Y%m%d%H%M')" >> $GITHUB_ENV
-      - name: 📤 Release to GitHub (自动发布Release)
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ env.RELEASE_TAG }}
-          name: "SuKiSU ${{ env.KSUVER }} (${{ env.DEVICES_NAME }})"
-          files: |
-            ./*
-            ./AnyKernel3_NoKPM/SuKiSu_${{ env.KSUVER }}_oneplus_aczip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
