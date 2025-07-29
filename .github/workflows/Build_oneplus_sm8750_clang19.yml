@@ -39,14 +39,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 📦 Install clang 19.1
+      - name: 📦 Install clang 120
         run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
-          sudo ./llvm.sh 19
-          sudo apt-get install -y clang-19 lld-19
-          echo "CC=clang-19" >> $GITHUB_ENV
-          echo "CXX=clang++-19" >> $GITHUB_ENV
+          sudo ./llvm.sh 120
+          sudo apt-get install -y clang-20 lld-20
+          echo "CC=clang-20" >> $GITHUB_ENV
+          echo "CXX=clang++-20" >> $GITHUB_ENV
 
       - name: 📊 Check disk space (检查磁盘空间)
         run: |
