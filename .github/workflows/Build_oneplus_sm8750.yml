@@ -2,9 +2,9 @@ name: Build_oneplus_sm8750
 on:
   workflow_dispatch:
     inputs:
-  schedule:
-    - cron: '0 4 * * *'  # 每天UTC 4:00（对应本地时间中午12:00）
-    - cron: '0 16 * * *' # 每天UTC 16:00（对应本地时间晚上0:00）
+  #schedule:
+    #- cron: '0 4 * * *'  # 每天UTC 4:00（对应本地时间中午12:00）
+    #- cron: '0 16 * * *' # 每天UTC 16:00（对应本地时间晚上0:00）
       
       enable_feature_x:
         description: "生成无KPM的AK3 - 取消则只有有KPM的AK3"
